@@ -7,5 +7,5 @@
 ## Compilation
 
 ```bash
-clang main.c -framework ApplicationServices -lcJSON
+make
 ```
