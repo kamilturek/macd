@@ -10,17 +10,98 @@ void print_usage()
     printf("Usage: macd <apply-configuration|list-displays|list-configurations|save-configuration>\n");
 }
 
-FILE *get_config_file()
+FILE *get_config_file(const char *mode)
 {
     char *homedir = getenv("HOME");
     char filename[strlen(homedir) + strlen("/.macd.json")];
 
     sprintf(filename, "%s/.macd.json", homedir);
 
-    return fopen(filename, "wt");
+    return fopen(filename, mode);
 }
 
-void list_displays()
+cJSON *read_configurations()
+{
+    FILE *config_file_ptr;
+    long config_file_size;
+    char *buffer;
+    size_t read_size;
+
+    cJSON *configurations;
+
+    config_file_ptr = get_config_file("rt");
+    if (config_file_ptr == NULL)
+    {
+        fputs("File error.\n", stderr);
+        exit(1);
+    }
+
+    fseek(config_file_ptr, 0, SEEK_END);
+    config_file_size = ftell(config_file_ptr);
+    rewind(config_file_ptr);
+
+    buffer = (char *)malloc(sizeof(char) * config_file_size);
+    if (buffer == NULL)
+    {
+        fputs("Memory error.\n", stderr);
+        exit(1);
+    }
+
+    read_size = fread(buffer, sizeof(char), config_file_size, config_file_ptr);
+    if (read_size != config_file_size)
+    {
+        fputs("Read error.\n", stderr);
+        exit(1);
+    }
+
+    configurations = cJSON_Parse(buffer);
+    if (configurations == NULL)
+    {
+        fputs("Parse error.\n", stderr);
+        exit(1);
+    }
+
+    free(buffer);
+    fclose(config_file_ptr);
+
+    return configurations;
+}
+
+cJSON *new_configuration(const char *name)
+{
+    cJSON *configuration = cJSON_CreateObject();
+    cJSON *displays = cJSON_CreateArray();
+
+    cJSON_AddStringToObject(configuration, "name", name);
+    cJSON_AddItemToObject(configuration, "displays", displays);
+
+    return configuration;
+}
+
+cJSON *get_or_create_configuration(cJSON *configurations, const char *name)
+{
+    cJSON *current_configuration;
+
+    cJSON_ArrayForEach(current_configuration, configurations)
+    {
+        cJSON *current_name_item = cJSON_GetObjectItem(current_configuration, "name");
+        const char *current_name = cJSON_GetStringValue(current_name_item);
+
+        if (strcmp(name, current_name) == 0)
+        {
+            cJSON_DeleteItemFromObject(current_configuration, "displays");
+            cJSON_AddItemToObject(current_configuration, "displays", cJSON_CreateArray());
+            return current_configuration;
+        }
+    }
+
+    cJSON *result_configuration = new_configuration(name);
+    cJSON_AddItemToArray(configurations, result_configuration);
+
+    return result_configuration;
+}
+
+void command_list_displays()
 {
     CGDisplayCount display_count;
     CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
@@ -47,7 +128,7 @@ void list_displays()
     }
 }
 
-void save_configuration(const char *name)
+void command_save_configuration(const char *name)
 {
     CGDisplayCount display_count;
     CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
@@ -55,11 +136,9 @@ void save_configuration(const char *name)
     CGDirectDisplayID display_list[display_count];
     CGGetOnlineDisplayList(INT_MAX, display_list, &display_count);
 
-    cJSON *configuration = cJSON_CreateObject();
-    cJSON_AddStringToObject(configuration, "name", name);
-
-    cJSON *displays = cJSON_CreateArray();
-    cJSON_AddItemToObject(configuration, "displays", displays);
+    cJSON* configurations = read_configurations();
+    cJSON *configuration = get_or_create_configuration(configurations, name);
+    cJSON* displays = cJSON_GetObjectItem(configuration, "displays");
 
     for (unsigned int i = 0; i < display_count; i++)
     {
@@ -81,13 +160,19 @@ void save_configuration(const char *name)
         cJSON_AddItemToArray(displays, display);
     }
 
-    /* To be read from file */
-    cJSON *configurations = cJSON_CreateArray();
-    cJSON_AddItemToArray(configurations, configuration);
-
-    FILE *config_file = get_config_file();
+    FILE *config_file = get_config_file("wt");
     fprintf(config_file, "%s\n", cJSON_Print(configurations));
     fclose(config_file);
+
+    cJSON_Delete(configurations);
+}
+
+void command_list_configurations()
+{
+    cJSON *configurations;
+
+    configurations = read_configurations();
+    fputs(cJSON_Print(configurations), stdout);
 
     cJSON_Delete(configurations);
 }
@@ -101,8 +186,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (strcmp(argv[1], "list-displays") == 0)
-        list_displays();
+    if (strcmp(argv[1], "list-configurations") == 0)
+        command_list_configurations();
+    else if (strcmp(argv[1], "list-displays") == 0)
+        command_list_displays();
     else if (strcmp(argv[1], "save-configuration") == 0)
     {
         if (argc < 3)
@@ -112,7 +199,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        save_configuration(argv[2]);
+        command_save_configuration(argv[2]);
     }
     else
     {
