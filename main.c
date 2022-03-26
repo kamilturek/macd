@@ -78,6 +78,22 @@ cJSON *new_configuration(const char *name)
     return configuration;
 }
 
+cJSON *get_configuration(cJSON *configurations, const char *name)
+{
+    cJSON *current_configuration;
+
+    cJSON_ArrayForEach(current_configuration, configurations)
+    {
+        cJSON *current_name_item = cJSON_GetObjectItem(current_configuration, "name");
+        const char *current_name = cJSON_GetStringValue(current_name_item);
+
+        if (strcmp(name, current_name) == 0)
+            return current_configuration;
+    }
+
+    return NULL;
+}
+
 cJSON *get_or_create_configuration(cJSON *configurations, const char *name)
 {
     cJSON *current_configuration;
@@ -136,9 +152,9 @@ void command_save_configuration(const char *name)
     CGDirectDisplayID display_list[display_count];
     CGGetOnlineDisplayList(INT_MAX, display_list, &display_count);
 
-    cJSON* configurations = read_configurations();
+    cJSON *configurations = read_configurations();
     cJSON *configuration = get_or_create_configuration(configurations, name);
-    cJSON* displays = cJSON_GetObjectItem(configuration, "displays");
+    cJSON *displays = cJSON_GetObjectItem(configuration, "displays");
 
     for (unsigned int i = 0; i < display_count; i++)
     {
@@ -163,6 +179,56 @@ void command_save_configuration(const char *name)
     FILE *config_file = get_config_file("wt");
     fprintf(config_file, "%s\n", cJSON_Print(configurations));
     fclose(config_file);
+
+    cJSON_Delete(configurations);
+}
+
+void command_apply_configuration(const char *name)
+{
+    CGError error;
+
+    cJSON *configurations = read_configurations();
+    cJSON *configuration = get_configuration(configurations, name);
+    if (configuration == NULL)
+    {
+        fputs("Configuration not found.\n", stderr);
+        exit(1);
+    }
+
+    CGDisplayConfigRef config_ref;
+    error = CGBeginDisplayConfiguration(&config_ref);
+    if (error != kCGErrorSuccess)
+    {
+        fputs("Configuration error.\n", stderr);
+        exit(1);
+    }
+
+    cJSON *displays = cJSON_GetObjectItem(configuration, "displays");
+    cJSON *current_display;
+    cJSON_ArrayForEach(current_display, displays)
+    {
+        cJSON *json_display_id = cJSON_GetObjectItem(current_display, "id");
+        cJSON *json_display_x = cJSON_GetObjectItem(current_display, "x");
+        cJSON *json_display_y = cJSON_GetObjectItem(current_display, "y");
+
+        int display_id = atoi(cJSON_GetStringValue(json_display_id));
+        int display_x = atoi(cJSON_GetStringValue(json_display_x));
+        int display_y = atoi(cJSON_GetStringValue(json_display_y));
+
+        error = CGConfigureDisplayOrigin(config_ref, display_id, display_x, display_y);
+        if (error != kCGErrorSuccess)
+        {
+            fputs("Configuration error.\n", stderr);
+            exit(1);
+        }
+    }
+
+    error = CGCompleteDisplayConfiguration(config_ref, kCGConfigurePermanently);
+    if (error != kCGErrorSuccess)
+    {
+        fputs("Configuration error.\n", stderr);
+        exit(1);
+    }
 
     cJSON_Delete(configurations);
 }
@@ -200,6 +266,17 @@ int main(int argc, char *argv[])
         }
 
         command_save_configuration(argv[2]);
+    }
+    else if (strcmp(argv[1], "apply-configuration") == 0)
+    {
+        if (argc < 3)
+        {
+            printf("Invalid numnber of arguments.\n");
+            printf("Usage: macd apply-configuration <name>\n");
+            return 1;
+        }
+
+        command_apply_configuration(argv[2]);
     }
     else
     {
