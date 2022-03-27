@@ -1,7 +1,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <CoreGraphics/CGDisplayConfiguration.h>
 #include <cjson/cJSON.h>
 
@@ -31,10 +30,7 @@ cJSON *read_configurations()
 
     config_file_ptr = get_config_file("rt");
     if (config_file_ptr == NULL)
-    {
-        fputs("File error.\n", stderr);
-        exit(1);
-    }
+        return cJSON_CreateArray();
 
     fseek(config_file_ptr, 0, SEEK_END);
     config_file_size = ftell(config_file_ptr);
