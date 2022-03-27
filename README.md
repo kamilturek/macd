@@ -34,7 +34,9 @@ of displays under `<name>`.
 
 ## Installation
 
-Brew Formula to be created soon.
+```bash
+brew install kamilturek/tap/macd
+```
 
 ## Compilation
 
