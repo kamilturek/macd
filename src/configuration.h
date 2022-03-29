@@ -7,7 +7,7 @@ typedef struct Display {
   int y;
 } Display;
 
-typedef struct Displays {
+typedef struct DisplayList {
   size_t length;
   Display* displays;
 } DisplayList;
@@ -17,7 +17,7 @@ typedef struct Configuration {
   DisplayList* displays;
 } Configuration;
 
-typedef struct Configurations {
+typedef struct ConfigurationList {
   size_t length;
   Configuration* configurations;
 } ConfigurationList;
