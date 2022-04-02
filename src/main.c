@@ -13,6 +13,28 @@ void print_usage() {
       "configuration>\n");
 }
 
+void print_configuration_list(ConfigurationList *configuration_list) {
+  for (size_t i = 0; i < configuration_list->length; i++) {
+    Configuration *configuration = configuration_list->list[i];
+
+    printf("-------------------------------------------\n");
+    printf("Configuration #%zu\n", i);
+    printf("Name: %s\n", configuration->name);
+    printf("Displays:\n");
+
+    for (size_t j = 0; j < configuration->displays->length; j++) {
+      Display *display = configuration->displays->list[j];
+      printf("\tDisplay #%zu\n", j);
+      printf("\tID: %d\n", display->id);
+      printf("\tX: %d\n", display->x);
+      printf("\tY: %d\n", display->y);
+      printf("\n");
+    }
+
+    printf("\n");
+  }
+}
+
 cJSON *read_configurations() {
   FILE *config_file_ptr;
   long config_file_size;
