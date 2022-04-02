@@ -18,7 +18,7 @@ void print_configuration_list(ConfigurationList *configuration_list) {
     Configuration *configuration = configuration_list->list[i];
 
     printf("-------------------------------------------\n");
-    printf("Configuration #%zu\n", i);
+    printf("Configuration #%zu\n", i + 1);
     printf("Name: %s\n", configuration->name);
     printf("Displays:\n");
 
@@ -31,6 +31,17 @@ void print_configuration_list(ConfigurationList *configuration_list) {
       printf("\n");
     }
 
+    printf("\n");
+  }
+}
+
+void print_display_list(DisplayList *display_list) {
+  for (size_t i = 0; i < display_list->length; i++) {
+    Display *display = display_list->list[i];
+    printf("Display #%zu\n", i + 1);
+    printf("ID: %d\n", display->id);
+    printf("X: %d\n", display->x);
+    printf("Y: %d\n", display->y);
     printf("\n");
   }
 }
@@ -121,28 +132,9 @@ cJSON *get_or_create_configuration(cJSON *configurations, const char *name) {
 }
 
 void command_list_displays() {
-  CGDisplayCount display_count;
-  CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
-
-  CGDirectDisplayID display_list[display_count];
-  CGGetOnlineDisplayList(INT_MAX, display_list, &display_count);
-
-  for (unsigned int i = 0; i < display_count; i++) {
-    CGDirectDisplayID current_display = display_list[i];
-    CGRect rect = CGDisplayBounds(current_display);
-    bool is_builtin = CGDisplayIsBuiltin(current_display);
-    bool is_main = CGDisplayIsMain(current_display);
-
-    printf("Display #%d\n", i + 1);
-    printf("ID: %u\n", current_display);
-    printf("X: %d\n", (int)rect.origin.x);
-    printf("Y: %d\n", (int)rect.origin.y);
-    printf("Width: %d\n", (int)rect.size.width);
-    printf("Height: %d\n", (int)rect.size.height);
-    printf("Built-in: %s\n", is_builtin ? "true" : "false");
-    printf("Main: %s\n", is_main ? "true" : "false");
-    printf("\n");
-  }
+  DisplayList *display_list = get_display_list();
+  print_display_list(display_list);
+  free_display_list(display_list);
 }
 
 void command_save_configuration(const char *name) {
@@ -230,9 +222,7 @@ void command_apply_configuration(const char *name) {
 void command_list_configurations() {
   FILE *config_file = open_config_file("rt");
   ConfigurationList *configuration_list = load_configuration_list(config_file);
-
   print_configuration_list(configuration_list);
-
   free_configuration_list(configuration_list);
   fclose(config_file);
 }

@@ -1,6 +1,8 @@
 #include "configuration.h"
 
+#include <CoreGraphics/CGDisplayConfiguration.h>
 #include <cjson/cJSON.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -163,6 +165,33 @@ DisplayList* loads_display_list(cJSON* json_display_list) {
   size_t i = 0;
   cJSON_ArrayForEach(json_display, json_display_list) {
     display_list->list[i++] = loads_display(json_display);
+  }
+
+  return display_list;
+}
+
+DisplayList* get_display_list() {
+  CGDisplayCount display_count;
+  CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
+
+  CGDirectDisplayID display_ids[display_count];
+  CGGetOnlineDisplayList(INT_MAX, display_ids, &display_count);
+
+  DisplayList* display_list = (DisplayList*)malloc(sizeof(DisplayList));
+  display_list->length = display_count;
+  display_list->list =
+      (Display**)malloc(sizeof(Display) * display_list->length);
+
+  for (unsigned int i = 0; i < display_count; i++) {
+    // To be replaced with e.g. serial number
+    CGDirectDisplayID display_id = display_ids[i];
+    CGRect display_bounds = CGDisplayBounds(display_id);
+
+    Display* display = (Display*)malloc(sizeof(Display));
+    display->id = display_id;
+    display->x = (int)display_bounds.origin.x;
+    display->y = (int)display_bounds.origin.y;
+    display_list->list[i] = display;
   }
 
   return display_list;

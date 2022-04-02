@@ -34,3 +34,5 @@ Configuration* loads_configuration(cJSON* json_configuration);
 ConfigurationList* loads_configuration_list(cJSON* json_configuration_list);
 Display* loads_display(cJSON* json_display);
 DisplayList* loads_display_list(cJSON* json_display_list);
+
+DisplayList* get_display_list();
