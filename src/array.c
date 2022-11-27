@@ -64,5 +64,6 @@ void array_reserve(Array *array, size_t capacity)
 
 void array_free(Array *array)
 {
+    free(array->data);
     free(array);
 }
