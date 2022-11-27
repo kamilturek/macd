@@ -21,13 +21,4 @@ Display *create_display();
 const char *str_display(Display *display);
 void free_display(Display *display);
 
-typedef struct DisplayList
-{
-  Display **displays;
-  size_t count;
-} DisplayList;
-
-DisplayList *create_display_list();
-void free_display_list(DisplayList *display_list);
-
 #endif /* MODELS_H */
