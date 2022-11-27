@@ -44,7 +44,7 @@ cJSON *read_configurations()
     }
 
     read_size = fread(buffer, sizeof(char), config_file_size, config_file_ptr);
-    if (read_size != config_file_size)
+    if (read_size != (size_t) config_file_size)
     {
         fputs("Read error.\n", stderr);
         exit(1);

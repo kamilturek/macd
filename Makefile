@@ -1,11 +1,12 @@
-CC     = cc
-CFLAGS = -Wall -Wextra -Werror
+CC      = cc
+CFLAGS  = -Wall -Wextra -Werror
+LDFLAGS = -lcJSON -framework ApplicationServices
 
 SOURCE = $(wildcard *.c)
 OBJS   = $(SOURCE:.c=.o)
 
-macd: main.c
-	$(CC) -framework ApplicationServices -lcJSON -o macd $(SOURCE)
+macd: $(SOURCE)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(SOURCE)
 
 clean:
 	rm -f macd $(OBJS)
