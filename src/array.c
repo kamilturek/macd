@@ -54,11 +54,7 @@ void array_reserve(Array *array, size_t capacity)
     if (array->capacity >= capacity)
         return;
 
-    void *new_data = malloc(array->item_size * capacity);
-    memcpy(new_data, array->data, array->item_size * array->length);
-    free(array->data);
-
-    array->data = new_data;
+    array->data = realloc(array->data, array->item_size * capacity);
     array->capacity = capacity;
 }
 

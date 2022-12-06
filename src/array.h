@@ -5,7 +5,7 @@
 
 typedef struct Array Array;
 
-Array *array_create();
+Array *array_create(size_t item_size);
 size_t array_length(Array *array);
 size_t array_capacity(Array *array);
 void *array_at(Array *array, size_t index);

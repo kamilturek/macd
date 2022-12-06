@@ -1,8 +1,10 @@
+#include "repo.h"
+#include "serializers.h"
+#include <CoreGraphics/CGDisplayConfiguration.h>
+#include <cjson/cJSON.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <CoreGraphics/CGDisplayConfiguration.h>
-#include <cjson/cJSON.h>
 
 void print_usage()
 {
@@ -44,7 +46,7 @@ cJSON *read_configurations()
     }
 
     read_size = fread(buffer, sizeof(char), config_file_size, config_file_ptr);
-    if ((long) read_size != config_file_size)
+    if ((long)read_size != config_file_size)
     {
         fputs("Read error.\n", stderr);
         exit(1);
@@ -115,29 +117,11 @@ cJSON *get_or_create_configuration(cJSON *configurations, const char *name)
 
 void command_list_displays()
 {
-    CGDisplayCount display_count;
-    CGGetOnlineDisplayList(INT_MAX, NULL, &display_count);
-
-    CGDirectDisplayID display_list[display_count];
-    CGGetOnlineDisplayList(INT_MAX, display_list, &display_count);
-
-    for (unsigned int i = 0; i < display_count; i++)
-    {
-        CGDirectDisplayID current_display = display_list[i];
-        CGRect rect = CGDisplayBounds(current_display);
-        bool is_builtin = CGDisplayIsBuiltin(current_display);
-        bool is_main = CGDisplayIsMain(current_display);
-
-        printf("Display #%d\n", i + 1);
-        printf("ID: %u\n", current_display);
-        printf("X: %d\n", (int)rect.origin.x);
-        printf("Y: %d\n", (int)rect.origin.y);
-        printf("Width: %d\n", (int)rect.size.width);
-        printf("Height: %d\n", (int)rect.size.height);
-        printf("Built-in: %s\n", is_builtin ? "true" : "false");
-        printf("Main: %s\n", is_main ? "true" : "false");
-        printf("\n");
-    }
+    DisplayList *display_list = list_displays();
+    const char *text = display_list_to_text(display_list);
+    display_list_free(display_list);
+    puts(text);
+    free((void *)text);
 }
 
 void command_save_configuration(const char *name)
